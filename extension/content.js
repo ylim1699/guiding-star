@@ -1,10 +1,9 @@
 (function () {
   if (document.getElementById('comet-overlay-root')) return;
-  // Signal to the Comet web app that this extension is active
+
   document.documentElement.setAttribute('data-comet-ext', '1');
 
-  {
-  // ── Inject overlay root ──────────────────────────────
+  // ── Overlay root (always injected, hidden by default) ──
   const root = document.createElement('div');
   root.id = 'comet-overlay-root';
   root.style.cssText = `
@@ -15,7 +14,6 @@
   `;
   document.documentElement.appendChild(root);
 
-  // ── Pointer dot ──────────────────────────────────────
   const style = document.createElement('style');
   style.textContent = `
     #comet-dot {
@@ -58,16 +56,11 @@
       max-width: min(620px, 88vw);
       white-space: pre-wrap;
       box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.07);
-      animation: comet-msg-in 0.22s ease-out;
       pointer-events: auto;
       cursor: grab;
       user-select: none;
     }
     #comet-msg:active { cursor: grabbing; }
-    @keyframes comet-msg-in {
-      from { opacity: 0; transform: translateX(-50%) translateY(10px); }
-      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-    }
   `;
   document.head.appendChild(style);
 
@@ -87,12 +80,12 @@
   let msgTimer = null;
 
   function showPointer(x, y) {
-    const px = `${x * 100}%`;
-    const py = `${y * 100}%`;
+    var px = (x * 100) + '%';
+    var py = (y * 100) + '%';
     dot.style.left  = px; dot.style.top  = py; dot.style.display = 'block';
     ring.style.left = px; ring.style.top = py; ring.style.display = 'block';
     if (dotTimer) clearTimeout(dotTimer);
-    dotTimer = setTimeout(() => {
+    dotTimer = setTimeout(function () {
       dot.style.display = 'none';
       ring.style.display = 'none';
     }, 2200);
@@ -100,34 +93,30 @@
 
   function showMessage(text) {
     msg.textContent = text;
-    // Reset to default bottom-center position on new message
     msg.style.left = '50%';
     msg.style.top = '';
     msg.style.bottom = '36px';
     msg.style.transform = 'translateX(-50%)';
     msg.style.display = 'block';
-    msg.style.animation = 'none';
-    msg.offsetHeight;
-    msg.style.animation = '';
     if (msgTimer) clearTimeout(msgTimer);
-    msgTimer = setTimeout(() => { msg.style.display = 'none'; }, 6000);
+    msgTimer = setTimeout(function () { msg.style.display = 'none'; }, 6000);
   }
 
-  let dragOX = 0, dragOY = 0;
-  msg.addEventListener('mousedown', (e) => {
+  // Drag
+  msg.addEventListener('mousedown', function (e) {
     e.preventDefault();
-    const r = msg.getBoundingClientRect();
-    dragOX = e.clientX - r.left;
-    dragOY = e.clientY - r.top;
+    var r = msg.getBoundingClientRect();
+    var ox = e.clientX - r.left;
+    var oy = e.clientY - r.top;
     msg.style.transform = 'none';
     msg.style.bottom = '';
     msg.style.left = r.left + 'px';
     msg.style.top  = r.top  + 'px';
     function onMove(ev) {
-      const maxX = window.innerWidth  - msg.offsetWidth;
-      const maxY = window.innerHeight - msg.offsetHeight;
-      msg.style.left = Math.max(0, Math.min(maxX, ev.clientX - dragOX)) + 'px';
-      msg.style.top  = Math.max(0, Math.min(maxY, ev.clientY - dragOY)) + 'px';
+      var maxX = window.innerWidth  - msg.offsetWidth;
+      var maxY = window.innerHeight - msg.offsetHeight;
+      msg.style.left = Math.max(0, Math.min(maxX, ev.clientX - ox)) + 'px';
+      msg.style.top  = Math.max(0, Math.min(maxY, ev.clientY - oy)) + 'px';
     }
     function onUp() {
       document.removeEventListener('mousemove', onMove);
@@ -137,23 +126,20 @@
     document.addEventListener('mouseup', onUp);
   });
 
-  // ── Listen to storage changes from any tab ───────────
-  // Check data-comet-app dynamically — React sets it after content script runs
-  chrome.storage.onChanged.addListener((changes) => {
+  // ── Show overlay only on non-Comet tabs ───────────────
+  chrome.storage.onChanged.addListener(function (changes) {
     if (document.documentElement.hasAttribute('data-comet-app')) return;
     if (changes['comet-pointer']) {
-      const { x, y } = changes['comet-pointer'].newValue;
-      showPointer(x, y);
+      var v = changes['comet-pointer'].newValue;
+      showPointer(v.x, v.y);
     }
     if (changes['comet-text']) {
       showMessage(changes['comet-text'].newValue);
     }
   });
 
-  }
-
-  // ── Bridge: Comet web app → background service worker ──
-  window.addEventListener('message', (e) => {
+  // ── Bridge: Comet page → background → all tabs ────────
+  window.addEventListener('message', function (e) {
     if (!e.data || typeof e.data !== 'object') return;
     if (e.data.type !== 'comet-pointer' && e.data.type !== 'comet-text') return;
     try { chrome.runtime.sendMessage(e.data); } catch (_) {}
