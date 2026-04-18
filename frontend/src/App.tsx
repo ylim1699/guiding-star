@@ -3,9 +3,10 @@ import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "./firebase";
-import LoginPage  from "./pages/LoginPage";
-import SeniorPage from "./pages/SeniorPage";
-import HelperPage from "./pages/HelperPage";
+import LoginPage   from "./pages/LoginPage";
+import SeniorPage  from "./pages/SeniorPage";
+import HelperPage  from "./pages/HelperPage";
+import HistoryPage from "./pages/HistoryPage";
 
 export default function App() {
   const [user,    setUser]    = useState<{ phoneNumber: string | null } | null>(null);
@@ -43,6 +44,10 @@ export default function App() {
     await createRoom(firebaseUser.phoneNumber);
   }
 
+  async function handleNewSession() {
+    if (user) await createRoom(user.phoneNumber);
+  }
+
   async function handleLogout() {
     await signOut(auth);
     setUser(null);
@@ -75,10 +80,15 @@ export default function App() {
         } />
         <Route path="/senior" element={
           session
-            ? <SeniorPage session={session} onLogout={handleLogout} />
+            ? <SeniorPage key={session.room_name} session={session} userId={user.phoneNumber || ""} onLogout={handleLogout} onNewSession={handleNewSession} />
             : <Navigate to="/" />
         } />
         <Route path="/helper" element={<HelperPage />} />
+        <Route path="/history" element={
+          user
+            ? <HistoryPage userId={user.phoneNumber || ""} />
+            : <Navigate to="/" />
+        } />
       </Routes>
     </BrowserRouter>
   );

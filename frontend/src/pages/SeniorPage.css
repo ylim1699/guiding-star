@@ -352,7 +352,95 @@
   max-width: 260px;
 }
 
-/* ── End session ──────────────────────────────────────── */
+/* ── Disconnected badge ───────────────────────────────── */
+.senior-status.disconnected {
+  background: var(--error-bg);
+  color: var(--error-text);
+}
+
+/* ── Disconnected banner ──────────────────────────────── */
+.senior-disconnected-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--warn-bg);
+  border-radius: 14px;
+  padding: 14px 20px;
+  margin-bottom: 20px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--warn-text);
+  outline: 1.5px solid rgba(124, 77, 0, 0.12);
+}
+
+/* ── Session action row ───────────────────────────────── */
+.senior-session-actions {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── End Session button ───────────────────────────────── */
+.senior-btn-end-session {
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 700;
+  background: var(--error-bg);
+  color: var(--error-text);
+  border: none;
+  border-radius: 12px;
+  padding: 12px 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  justify-content: center;
+  outline: 1.5px solid rgba(155, 28, 28, 0.12);
+  transition: background 0.2s, opacity 0.2s;
+}
+.senior-btn-end-session:hover {
+  background: #fee2e2;
+}
+
+/* ── Session ended screen ─────────────────────────────── */
+.senior-ended {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 80px 24px 48px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+.senior-ended-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 28px;
+}
+.senior-ended-title {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--on-surface);
+  margin: 0 0 12px;
+}
+.senior-ended-sub {
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--on-surface-muted);
+  margin: 0 0 36px;
+  max-width: 360px;
+}
+
+/* ── End session / sign-out ───────────────────────────── */
 .senior-btn-end {
   font-family: var(--font-body);
   font-size: 15px;
@@ -372,17 +460,105 @@
 }
 .senior-btn-end:hover { opacity: 1; }
 
-/* ── Comet pointer overlay ────────────────────────────── */
+/* ── History nav button ───────────────────────────────── */
+.senior-btn-history {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 100px;
+  border: none;
+  background: var(--surface-low);
+  color: var(--on-surface-2);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  outline: 1.5px solid var(--outline-ghost);
+}
+.senior-btn-history:hover { background: #ebebf7; }
+
+/* ── Mute button ──────────────────────────────────────── */
+.senior-mute-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 100px;
+  border: none;
+  background: var(--surface-low);
+  color: var(--on-surface-2);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  outline: 1.5px solid var(--outline-ghost);
+}
+.senior-mute-btn:hover {
+  background: #ebebf7;
+}
+.senior-mute-btn.muted {
+  background: var(--error-bg);
+  color: var(--error-text);
+  outline-color: rgba(155,28,28,0.15);
+}
+
+/* ── Text message overlay ─────────────────────────────── */
+.senior-text-overlay {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9998;
+  pointer-events: none;
+  animation: text-slide-up 0.3s ease-out;
+}
+@keyframes text-slide-up {
+  from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+.senior-text-bubble {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(10, 15, 40, 0.92);
+  color: #ffffff;
+  padding: 18px 28px;
+  border-radius: 20px;
+  font-family: var(--font-body);
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.4;
+  max-width: min(680px, 90vw);
+  white-space: pre-wrap;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.35), 0 0 0 1.5px rgba(255,255,255,0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ── Guide pointer overlay ────────────────────────────── */
 .senior-overlay {
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 9999;
 }
-.senior-comet-pointer {
+.senior-target {
   position: absolute;
-  transition: transform 0.15s ease;
-  will-change: transform;
+  transform: translate(-50%, -50%);
+  transition: left 0.1s ease, top 0.1s ease;
+  will-change: left, top;
+  filter:
+    drop-shadow(0 0 0 3px rgba(0,0,0,0.6))
+    drop-shadow(0 2px 12px rgba(0,0,0,0.5));
+  animation: target-arrive 0.18s ease-out;
+}
+@keyframes target-arrive {
+  0%   { transform: translate(-50%, -50%) scale(0.55); opacity: 0; }
+  60%  { transform: translate(-50%, -50%) scale(1.08); }
+  100% { transform: translate(-50%, -50%) scale(1);    opacity: 1; }
 }
 
 /* ── Starburst spark animation ────────────────────────── */

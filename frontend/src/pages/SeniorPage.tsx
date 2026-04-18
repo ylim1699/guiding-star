@@ -1,6 +1,9 @@
 import DailyIframe from "@daily-co/daily-js";
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
+import { collection, addDoc, updateDoc, doc, serverTimestamp } from "firebase/firestore";
+import { db } from "../firebase";
 import "./SeniorPage.css";
 import Logo from "../components/Logo";
 
@@ -17,20 +20,36 @@ interface Spark {
   dist: number;
 }
 
-export default function SeniorPage({ session, onLogout }: { session: Session; onLogout?: () => void }) {
-  const callRef  = useRef<ReturnType<typeof DailyIframe.createCallObject> | null>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+export default function SeniorPage({ session, userId, onLogout, onNewSession }: {
+  session: Session;
+  userId: string;
+  onLogout?: () => void;
+  onNewSession?: () => Promise<void>;
+}) {
+  const navigate        = useNavigate();
+  const callRef         = useRef<ReturnType<typeof DailyIframe.createCallObject> | null>(null);
+  const timerRef        = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wasConnected    = useRef(false);
+  const sessionDocId    = useRef<string | null>(null);
+  const sessionMessages = useRef<string[]>([]);
+  const pointerCountRef = useRef(0);
+  const sessionStartRef = useRef<number>(Date.now());
 
-  const [helperOn,    setHelperOn]    = useState(false);
-  const [sharing,     setSharing]     = useState(false);
-  const [pointer,     setPointer]     = useState<{ x: number; y: number } | null>(null);
-  const [pulse,       setPulse]       = useState(false);
-  const [helperEmail, setHelperEmail] = useState("");
-  const [helperName,  setHelperName]  = useState("");
-  const [sending,     setSending]     = useState(false);
-  const [sent,        setSent]        = useState(false);
-  const [error,       setError]       = useState<string | null>(null);
-  const [sparks,      setSparks]      = useState<Spark[]>([]);
+  const [helperOn,      setHelperOn]      = useState(false);
+  const [sharing,       setSharing]       = useState(false);
+  const [disconnected,  setDisconnected]  = useState(false);
+  const [ended,         setEnded]         = useState(false);
+  const [newSessLoading,setNewSessLoading]= useState(false);
+  const [muted,         setMuted]         = useState(false);
+  const [pointer,       setPointer]       = useState<{ x: number; y: number } | null>(null);
+  const [textMsg,       setTextMsg]       = useState<string | null>(null);
+  const msgTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [helperEmail,   setHelperEmail]   = useState("");
+  const [helperName,    setHelperName]    = useState("");
+  const [sending,       setSending]       = useState(false);
+  const [sent,          setSent]          = useState(false);
+  const [error,         setError]         = useState<string | null>(null);
+  const [sparks,        setSparks]        = useState<Spark[]>([]);
   const sparkId = useRef(0);
 
   const helperUrl = `${window.location.origin}/helper?room=${encodeURIComponent(session.room_url)}`;
@@ -41,6 +60,7 @@ export default function SeniorPage({ session, onLogout }: { session: Session; on
       callRef.current?.leave();
       callRef.current?.destroy();
       if (timerRef.current) clearTimeout(timerRef.current);
+      if (msgTimerRef.current) clearTimeout(msgTimerRef.current);
     };
   }, []);
 
@@ -48,20 +68,71 @@ export default function SeniorPage({ session, onLogout }: { session: Session; on
     try {
       const call = DailyIframe.createCallObject({ audioSource: true, videoSource: false });
       callRef.current = call;
-      call.on("participant-joined", (e) => { if (e && !e.participant.local) setHelperOn(true); });
-      call.on("participant-left",   (e) => { if (e && !e.participant.local) setHelperOn(false); });
+      call.on("participant-joined", (e) => {
+        if (e && !e.participant.local) {
+          wasConnected.current = true;
+          setHelperOn(true);
+          setDisconnected(false);
+        }
+      });
+      call.on("participant-left", (e) => {
+        if (e && !e.participant.local) {
+          setHelperOn(false);
+          if (wasConnected.current) setDisconnected(true);
+        }
+      });
       call.on("app-message", (e) => {
         if (e?.data?.type === "pointer") {
-          setPointer({ x: e.data.x, y: e.data.y });
-          setPulse(true);
-          setTimeout(() => setPulse(false), 300);
+          let { x, y }: { x: number; y: number } = e.data;
+
+          // If sharing the full screen, coordinates are in screen space.
+          // Transform them into viewport space so the overlay lands correctly.
+          const sw = window.screen.width;
+          const sh = window.screen.height;
+          const vw = window.innerWidth;
+          const vh = window.innerHeight;
+          if (sw > vw * 1.1 || sh > vh * 1.1) {
+            const chromeH = window.outerHeight - window.innerHeight;
+            x = (x * sw - window.screenX) / vw;
+            y = (y * sh - window.screenY - chromeH) / vh;
+          }
+
+          // Only show if inside the viewport
+          if (x < 0 || x > 1 || y < 0 || y > 1) return;
+
+          setPointer({ x, y });
+          pointerCountRef.current += 1;
           if (timerRef.current) clearTimeout(timerRef.current);
           timerRef.current = setTimeout(() => setPointer(null), 2000);
+        }
+        if (e?.data?.type === "text" && e.data.msg) {
+          setTextMsg(e.data.msg);
+          sessionMessages.current.push(e.data.msg);
+          if (msgTimerRef.current) clearTimeout(msgTimerRef.current);
+          msgTimerRef.current = setTimeout(() => setTextMsg(null), 6000);
         }
       });
       await call.join({ url: session.room_url });
       await call.startScreenShare();
       setSharing(true);
+      sessionStartRef.current = Date.now();
+
+      // Create Firestore session record
+      try {
+        const docRef = await addDoc(collection(db, "sessions"), {
+          userId,
+          startTime: serverTimestamp(),
+          endTime:   null,
+          helperName:  "",
+          helperEmail: "",
+          messages:    [],
+          pointerCount: 0,
+          summary: null,
+          steps:   [],
+          status:  "active",
+        });
+        sessionDocId.current = docRef.id;
+      } catch { /* history saving is best-effort */ }
     } catch {
       setError("Could not start session. Please refresh and try again.");
     }
@@ -109,12 +180,118 @@ export default function SeniorPage({ session, onLogout }: { session: Session; on
     }
   }
 
-  const statusKey  = helperOn ? "connected" : sharing ? "waiting" : "starting";
+  function toggleMute() {
+    const next = !muted;
+    setMuted(next);
+    callRef.current?.setLocalAudio(!next);
+  }
+
+  async function endSession() {
+    callRef.current?.leave();
+    callRef.current?.destroy();
+    callRef.current = null;
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setPointer(null);
+
+    // Save session to Firestore with AI summary
+    if (sessionDocId.current) {
+      const durationMin = Math.max(1, Math.round((Date.now() - sessionStartRef.current) / 60000));
+      let summary = "";
+      let steps: string[] = [];
+      try {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/generate-summary`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            helper_name:      helperName || "Your guide",
+            duration_minutes: durationMin,
+            messages:         sessionMessages.current,
+            pointer_count:    pointerCountRef.current,
+          }),
+        });
+        const data = await res.json();
+        summary = data.summary;
+        steps   = data.steps;
+      } catch { /* best-effort */ }
+
+      try {
+        await updateDoc(doc(db, "sessions", sessionDocId.current), {
+          endTime:      serverTimestamp(),
+          helperName,
+          helperEmail,
+          messages:     sessionMessages.current,
+          pointerCount: pointerCountRef.current,
+          summary,
+          steps,
+          status: "ended",
+        });
+      } catch { /* best-effort */ }
+    }
+
+    setEnded(true);
+  }
+
+  async function startNewSession() {
+    setNewSessLoading(true);
+    await onNewSession?.();
+    // App will update session prop and remount this component via key
+  }
+
+  const statusKey = helperOn
+    ? "connected"
+    : disconnected
+    ? "disconnected"
+    : sharing
+    ? "waiting"
+    : "starting";
   const statusText = helperOn
-    ? "✓  Guide connected"
+    ? "Guide connected"
+    : disconnected
+    ? "Guide disconnected"
     : sharing
     ? "Waiting for guide"
     : "Starting...";
+
+  if (ended) return (
+    <div className="senior-page">
+      <nav className="senior-nav">
+        <Logo variant="light" size="md" />
+      </nav>
+      <main className="senior-content">
+        <div className="senior-ended">
+          <div className="senior-ended-icon">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+              <circle cx="24" cy="24" r="22" stroke="rgba(29,78,216,0.18)" strokeWidth="2"/>
+              <path d="M16 24l6 6 10-10" stroke="#1D4ED8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <h2 className="senior-ended-title">Session ended</h2>
+          <p className="senior-ended-sub">Your screen share has stopped. Ready to start again whenever you need help.</p>
+          <button
+            className="senior-btn-primary"
+            style={{ maxWidth: 340 }}
+            onClick={startNewSession}
+            disabled={newSessLoading}
+          >
+            {newSessLoading ? "Starting..." : <><span>Start New Session</span> <span style={{ opacity: 0.7 }}>→</span></>}
+          </button>
+          <button className="senior-btn-ghost" style={{ marginTop: 16 }} onClick={() => navigate("/history")}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.4"/>
+              <path d="M8 5v3.5l2 2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            View Session History
+          </button>
+          <button className="senior-btn-end" style={{ marginTop: 8 }} onClick={onLogout}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3M10 11l3-3-3-3M13 8H6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Sign Out
+          </button>
+        </div>
+      </main>
+    </div>
+  );
 
   return (
     <div className="senior-page">
@@ -126,12 +303,49 @@ export default function SeniorPage({ session, onLogout }: { session: Session; on
             <span className="senior-status-dot" />
             {statusText}
           </div>
+          <button className="senior-btn-history" onClick={() => navigate("/history")}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.4"/>
+              <path d="M8 5v3.5l2 2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            History
+          </button>
+          <button
+            className={`senior-mute-btn${muted ? " muted" : ""}`}
+            onClick={toggleMute}
+            title={muted ? "Unmute microphone" : "Mute microphone"}
+          >
+            {muted ? (
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M9 2a3 3 0 013 3v4a3 3 0 01-3 3 3 3 0 01-3-3V5a3 3 0 013-3z" stroke="currentColor" strokeWidth="1.5"/>
+                <path d="M5 8.5A4 4 0 009 12.5a4 4 0 004-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                <line x1="9" y1="12.5" x2="9" y2="15.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                <line x1="2" y1="2" x2="16" y2="16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M9 2a3 3 0 013 3v4a3 3 0 01-3 3 3 3 0 01-3-3V5a3 3 0 013-3z" stroke="currentColor" strokeWidth="1.5"/>
+                <path d="M5 8.5A4 4 0 009 12.5a4 4 0 004-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                <line x1="9" y1="12.5" x2="9" y2="15.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            )}
+            {muted ? "Unmute" : "Mute"}
+          </button>
         </div>
       </nav>
 
       {/* Main */}
       <main className="senior-content">
         {error && <div className="senior-error">{error}</div>}
+        {disconnected && !helperOn && (
+          <div className="senior-disconnected-banner">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <circle cx="9" cy="9" r="8" stroke="currentColor" strokeWidth="1.5"/>
+              <path d="M9 5v5M9 13h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+            Guide disconnected — share the link again to reconnect.
+          </div>
+        )}
 
         {/* Editorial headline */}
         <div className="senior-hero">
@@ -183,7 +397,14 @@ export default function SeniorPage({ session, onLogout }: { session: Session; on
               }
             </button>
 
-            <div style={{ marginTop: "20px" }}>
+            <div className="senior-session-actions">
+              <button className="senior-btn-end-session" onClick={endSession}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+                  <rect x="5" y="5" width="6" height="6" rx="0.5" fill="currentColor"/>
+                </svg>
+                End Session
+              </button>
               <button className="senior-btn-end" onClick={onLogout}>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3M10 11l3-3-3-3M13 8H6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -220,39 +441,56 @@ export default function SeniorPage({ session, onLogout }: { session: Session; on
         </div>
       </main>
 
-      {/* Comet pointer overlay */}
+      {/* Text message overlay */}
+      {textMsg && (
+        <div className="senior-text-overlay">
+          <div className="senior-text-bubble">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}>
+              <path d="M10 2a3 3 0 013 3v3a3 3 0 01-3 3 3 3 0 01-3-3V5a3 3 0 013-3z" stroke="currentColor" strokeWidth="1.5"/>
+              <path d="M6 9A4 4 0 0010 13a4 4 0 004-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              <line x1="10" y1="13" x2="10" y2="16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+            {textMsg}
+          </div>
+        </div>
+      )}
+
+      {/* Guide pointer overlay */}
       {pointer && (
         <div className="senior-overlay">
           <div
-            className="senior-comet-pointer"
+            className="senior-target"
             style={{
-              left:      `${pointer.x * 100}%`,
-              top:       `${pointer.y * 100}%`,
-              transform: `translate(-50%, -50%) scale(${pulse ? 1.22 : 1})`,
+              left: `${pointer.x * 100}%`,
+              top:  `${pointer.y * 100}%`,
             }}
           >
             <svg
-              width="220"
-              height="220"
-              viewBox="-55 -55 110 110"
+              width="144" height="144"
+              viewBox="-36 -36 72 72"
               fill="none"
               shapeRendering="geometricPrecision"
-              style={{ width: 110, height: 110, overflow: "visible", filter: "drop-shadow(0 0 10px rgba(255,255,255,0.7)) drop-shadow(0 0 28px rgba(29,78,216,0.9))" }}
+              style={{ width: 72, height: 72, overflow: "visible" }}
             >
-              {/* Outer boundary ring */}
-              <circle r="48" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5"/>
-              {/* Pulsing halo ring */}
-              <circle r="36" fill="rgba(29,78,216,0.12)" stroke="rgba(255,255,255,0.45)" strokeWidth="2"/>
-              {/* Inner glow */}
-              <circle r="24" fill="rgba(29,78,216,0.22)" stroke="rgba(255,255,255,0.25)" strokeWidth="1"/>
-              {/* 3 parallel comet tails — lower-left, matching logo style */}
-              <line x1="-10"  y1="10"  x2="-42" y2="42"  stroke="white" strokeWidth="4.5" strokeLinecap="round" opacity="0.85"/>
-              <line x1="-13"  y1="7"   x2="-45" y2="36"  stroke="white" strokeWidth="3"   strokeLinecap="round" opacity="0.5"/>
-              <line x1="-7"   y1="13"  x2="-38" y2="47"  stroke="white" strokeWidth="2.2" strokeLinecap="round" opacity="0.3"/>
-              {/* 4-pointed north star */}
-              <path d="M0,-22 L5,-5 L22,0 L5,5 L0,22 L-5,5 L-22,0 L-5,-5 Z" fill="white"/>
-              {/* Blue center accent */}
-              <circle r="6" fill="rgba(29,78,216,0.65)"/>
+              {/* Outer ring — black halo then white */}
+              <circle r="28" stroke="black"  strokeWidth="7" opacity="0.55"/>
+              <circle r="28" stroke="white"  strokeWidth="2.5"/>
+              {/* Inner ring — black halo then white */}
+              <circle r="16" stroke="black"  strokeWidth="5" opacity="0.55"/>
+              <circle r="16" stroke="white"  strokeWidth="2"/>
+              {/* Crosshair arms */}
+              <line x1="-36" x2="-20" y1="0" y2="0" stroke="black" strokeWidth="4" strokeLinecap="round" opacity="0.5"/>
+              <line x1="-36" x2="-20" y1="0" y2="0" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              <line x1="20"  x2="36"  y1="0" y2="0" stroke="black" strokeWidth="4" strokeLinecap="round" opacity="0.5"/>
+              <line x1="20"  x2="36"  y1="0" y2="0" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              <line x1="0" x2="0" y1="-36" y2="-20" stroke="black" strokeWidth="4" strokeLinecap="round" opacity="0.5"/>
+              <line x1="0" x2="0" y1="-36" y2="-20" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              <line x1="0" x2="0" y1="20"  y2="36"  stroke="black" strokeWidth="4" strokeLinecap="round" opacity="0.5"/>
+              <line x1="0" x2="0" y1="20"  y2="36"  stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              {/* Center dot */}
+              <circle r="5.5" fill="black" opacity="0.4"/>
+              <circle r="4"   fill="#1D4ED8"/>
+              <circle r="2"   fill="white"/>
             </svg>
           </div>
         </div>

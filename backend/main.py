@@ -1,7 +1,8 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import httpx, os, time, resend
+import httpx, os, time, resend, json
+import google.generativeai as genai
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -17,6 +18,7 @@ app.add_middleware(
 
 DAILY_KEY = os.getenv("DAILY_API_KEY")
 resend.api_key = os.getenv("RESEND_API_KEY")
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 
 class RoomRequest(BaseModel):
@@ -109,6 +111,56 @@ async def send_invite(req: SendInviteRequest):
         """,
     })
     return {"sent": True}
+
+
+class SummarizeRequest(BaseModel):
+    helper_name: str
+    duration_minutes: int
+    messages: list[str]
+    pointer_count: int
+
+
+@app.post("/generate-summary")
+async def generate_summary(req: SummarizeRequest):
+    helper = req.helper_name or "Your guide"
+    duration = max(1, req.duration_minutes)
+
+    if req.messages:
+        msgs_block = "\n".join(f'- "{m}"' for m in req.messages)
+    else:
+        msgs_block = "No text messages were sent. The guide used click markers to point things out on screen."
+
+    prompt = f"""You are summarizing a remote assistance session where a guide helped an elderly person with their computer or device.
+
+Session details:
+- Guide: {helper}
+- Duration: {duration} minute(s)
+- Click markers placed: {req.pointer_count}
+- Messages from guide:
+{msgs_block}
+
+Produce:
+1. A warm 2-sentence summary written TO the elderly person (start with "During your session,"). Mention what was helped with based on the messages.
+2. A numbered list of 3 to 7 clear, plain-language steps they can follow to do the same thing on their own next time. Each step should be one sentence starting with a verb (e.g. "Click...", "Open...", "Type..."). If the messages don't give enough detail, write general steps for the most likely task.
+
+Respond ONLY with valid JSON, exactly this shape:
+{{"summary": "...", "steps": ["...", "...", "..."]}}"""
+
+    try:
+        model = genai.GenerativeModel("gemini-2.0-flash")
+        response = model.generate_content(prompt)
+        raw = response.text.strip()
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        data = json.loads(raw)
+        return {"summary": data.get("summary", ""), "steps": data.get("steps", [])}
+    except Exception:
+        return {
+            "summary": f"During your session, {helper} helped guide you through a task on your screen.",
+            "steps": ["Ask your guide to walk you through the steps again if needed."],
+        }
 
 
 @app.get("/health")
