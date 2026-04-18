@@ -55,7 +55,7 @@ export default function LoginPage({ onLogin }: { onLogin: (user: { phoneNumber: 
 
     return (
         <div className="login-wrapper">
-            <h1 className="login-title">Guiding Star</h1>
+            <h1 className="login-title">Comet</h1>
             <div id="recaptcha-container" />
             {error && <p style={{ color: "red", marginBottom: "8px" }}>{error}</p>}
             {!confirm ? (

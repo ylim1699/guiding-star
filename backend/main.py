@@ -32,7 +32,7 @@ class SendInviteRequest(BaseModel):
 
 @app.post("/create-room")
 async def create_room(req: RoomRequest):
-    name = "boom-" + req.phone.replace("+", "").replace(" ", "")
+    name = "comet-" + req.phone.replace("+", "").replace(" ", "")
 
     async with httpx.AsyncClient() as c:
         response = await c.post(
@@ -71,7 +71,7 @@ async def create_room(req: RoomRequest):
 @app.post("/send-invite")
 async def send_invite(req: SendInviteRequest):
     resend.Emails.send({
-        "from": "Boom Guide <onboarding@resend.dev>",
+        "from": "Comet <onboarding@resend.dev>",
         "to": req.helper_email,
         "subject": f"{req.senior_name} needs your help",
         "html": f"""
@@ -80,7 +80,7 @@ async def send_invite(req: SendInviteRequest):
             <div style="background: #E85D04; border-radius: 12px;
                         padding: 24px; text-align: center; margin-bottom: 32px;">
                 <h1 style="color: white; margin: 0; font-size: 28px;">
-                    Boom Guide
+                    Comet
                 </h1>
             </div>
             <h2 style="color: #333; font-size: 24px;">

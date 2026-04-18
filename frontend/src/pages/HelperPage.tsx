@@ -60,7 +60,7 @@ export default function HelperPage() {
 
   return (
     <div className="helper-page">
-      <h1 className="helper-title">Guiding Star</h1>
+      <h1 className="helper-title">Comet</h1>
       <p className="helper-status">{status}</p>
 
       <div className="helper-video-wrap" onClick={handleClick}>
