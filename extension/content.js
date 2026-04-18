@@ -3,10 +3,7 @@
   // Signal to the Comet web app that this extension is active
   document.documentElement.setAttribute('data-comet-ext', '1');
 
-  // On the Comet app itself, only set up the message bridge — no overlay
-  const isCometApp = document.documentElement.hasAttribute('data-comet-app');
-
-  if (!isCometApp) {
+  {
   // ── Inject overlay root ──────────────────────────────
   const root = document.createElement('div');
   root.id = 'comet-overlay-root';
@@ -127,8 +124,10 @@
     msg.style.left = r.left + 'px';
     msg.style.top  = r.top  + 'px';
     function onMove(ev) {
-      msg.style.left = (ev.clientX - dragOX) + 'px';
-      msg.style.top  = (ev.clientY - dragOY) + 'px';
+      const maxX = window.innerWidth  - msg.offsetWidth;
+      const maxY = window.innerHeight - msg.offsetHeight;
+      msg.style.left = Math.max(0, Math.min(maxX, ev.clientX - dragOX)) + 'px';
+      msg.style.top  = Math.max(0, Math.min(maxY, ev.clientY - dragOY)) + 'px';
     }
     function onUp() {
       document.removeEventListener('mousemove', onMove);
@@ -139,7 +138,9 @@
   });
 
   // ── Listen to storage changes from any tab ───────────
+  // Check data-comet-app dynamically — React sets it after content script runs
   chrome.storage.onChanged.addListener((changes) => {
+    if (document.documentElement.hasAttribute('data-comet-app')) return;
     if (changes['comet-pointer']) {
       const { x, y } = changes['comet-pointer'].newValue;
       showPointer(x, y);
@@ -149,7 +150,7 @@
     }
   });
 
-  } // end !isCometApp
+  }
 
   // ── Bridge: Comet web app → background service worker ──
   window.addEventListener('message', (e) => {
