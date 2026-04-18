@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { collection, query, where, orderBy, getDocs, deleteDoc, doc } from "firebase/firestore";
+import { collection, query, where, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { db } from "../firebase";
 import Logo from "../components/Logo";
 import "./HistoryPage.css";
@@ -54,13 +54,11 @@ export default function HistoryPage({ userId }: { userId: string }) {
   async function loadSessions() {
     setLoading(true);
     try {
-      const q = query(
-        collection(db, "sessions"),
-        where("userId", "==", userId),
-        orderBy("startTime", "desc"),
-      );
+      const q = query(collection(db, "sessions"), where("userId", "==", userId));
       const snap = await getDocs(q);
-      setSessions(snap.docs.map(d => ({ id: d.id, ...d.data() } as SessionRecord)));
+      const docs = snap.docs.map(d => ({ id: d.id, ...d.data() } as SessionRecord));
+      docs.sort((a, b) => (b.startTime?.seconds ?? 0) - (a.startTime?.seconds ?? 0));
+      setSessions(docs);
     } catch {
       setSessions([]);
     } finally {

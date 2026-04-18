@@ -55,11 +55,14 @@ export default function SeniorPage({ session, userId, onLogout, onNewSession }: 
   const helperUrl = `${window.location.origin}/helper?room=${encodeURIComponent(session.room_url)}`;
 
   useEffect(() => {
-    // Give content script a tick to set the attribute
+    document.documentElement.setAttribute('data-comet-app', '1');
     const t = setTimeout(() => {
       setExtInstalled(document.documentElement.getAttribute('data-comet-ext') === '1');
     }, 200);
-    return () => clearTimeout(t);
+    return () => {
+      clearTimeout(t);
+      document.documentElement.removeAttribute('data-comet-app');
+    };
   }, []);
 
   useEffect(() => {

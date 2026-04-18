@@ -3,6 +3,10 @@
   // Signal to the Comet web app that this extension is active
   document.documentElement.setAttribute('data-comet-ext', '1');
 
+  // On the Comet app itself, only set up the message bridge — no overlay
+  const isCometApp = document.documentElement.hasAttribute('data-comet-app');
+
+  if (!isCometApp) {
   // ── Inject overlay root ──────────────────────────────
   const root = document.createElement('div');
   root.id = 'comet-overlay-root';
@@ -116,9 +120,9 @@
     }
   });
 
+  } // end !isCometApp
+
   // ── Bridge: Comet web app → background service worker ──
-  // Route through background.js so storage writes survive
-  // content script context invalidation (SPA navigation etc.)
   window.addEventListener('message', (e) => {
     if (!e.data || typeof e.data !== 'object') return;
     if (e.data.type !== 'comet-pointer' && e.data.type !== 'comet-text') return;
