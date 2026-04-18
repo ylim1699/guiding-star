@@ -46,19 +46,23 @@
       left: 50%;
       transform: translateX(-50%);
       display: none;
+      align-items: center;
+      gap: 12px;
       background: rgba(10, 15, 40, 0.93);
-      color: white;
-      padding: 14px 24px;
-      border-radius: 16px;
-      font-size: 18px;
+      color: #ffffff;
+      padding: 16px 20px 16px 24px;
+      border-radius: 18px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 20px;
       font-weight: 600;
-      line-height: 1.45;
-      max-width: min(620px, 88vw);
+      line-height: 1.4;
+      max-width: min(640px, 88vw);
       white-space: pre-wrap;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.07);
+      box-shadow: 0 8px 40px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.07);
       pointer-events: auto;
       cursor: grab;
       user-select: none;
+      z-index: 2147483647;
     }
     #comet-msg:active { cursor: grabbing; }
   `;
