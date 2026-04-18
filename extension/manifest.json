@@ -4,6 +4,7 @@
   "version": "1.0",
   "description": "Shows your guide's pointer and messages on any page during a Comet session.",
   "permissions": ["storage"],
+  "background": { "service_worker": "background.js" },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],

@@ -116,18 +116,12 @@
     }
   });
 
-  // ── Bridge: Comet web app → chrome.storage ───────────
+  // ── Bridge: Comet web app → background service worker ──
+  // Route through background.js so storage writes survive
+  // content script context invalidation (SPA navigation etc.)
   window.addEventListener('message', (e) => {
     if (!e.data || typeof e.data !== 'object') return;
-    // Guard against invalidated extension context
-    try {
-      if (!chrome?.storage?.local) return;
-      if (e.data.type === 'comet-pointer') {
-        chrome.storage.local.set({ 'comet-pointer': { x: e.data.x, y: e.data.y, t: Date.now() } });
-      }
-      if (e.data.type === 'comet-text') {
-        chrome.storage.local.set({ 'comet-text': e.data.msg });
-      }
-    } catch (_) {}
+    if (e.data.type !== 'comet-pointer' && e.data.type !== 'comet-text') return;
+    try { chrome.runtime.sendMessage(e.data); } catch (_) {}
   });
 })();
