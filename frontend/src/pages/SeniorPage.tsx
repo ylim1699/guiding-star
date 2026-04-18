@@ -3,17 +3,6 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { QRCodeSVG } from "qrcode.react";
 
-// ─── CONTACTS CONFIG ──────────────────────────────────────────────
-// Edit these for the demo. Each contact gets a big "Call" button.
-const CONTACTS = [
-  { name: "John",  email: "john@example.com" },
-  { name: "Mary",  email: "mary@example.com" },
-  { name: "Sarah", email: "sarah@example.com" },
-];
-
-const SENIOR_NAME = "Mom";
-// ──────────────────────────────────────────────────────────────────
-
 interface Session {
   room_url: string;
   room_name: string;
@@ -23,14 +12,16 @@ export default function SeniorPage({ session }: { session: Session }) {
   const callRef  = useRef<ReturnType<typeof DailyIframe.createCallObject> | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [helperOn, setHelperOn] = useState(false);
-  const [sharing,  setSharing]  = useState(false);
-  const [pointer,  setPointer]  = useState<{ x: number; y: number } | null>(null);
-  const [pulse,    setPulse]    = useState(false);
-  const [sending,  setSending]  = useState<string | null>(null);
-  const [sent,     setSent]     = useState<string | null>(null);
-  const [showQR,   setShowQR]   = useState(false);
-  const [error,    setError]    = useState<string | null>(null);
+  const [helperOn,    setHelperOn]    = useState(false);
+  const [sharing,     setSharing]     = useState(false);
+  const [pointer,     setPointer]     = useState<{ x: number; y: number } | null>(null);
+  const [pulse,       setPulse]       = useState(false);
+  const [helperEmail, setHelperEmail] = useState("");
+  const [helperName,  setHelperName]  = useState("");
+  const [sending,     setSending]     = useState(false);
+  const [sent,        setSent]        = useState(false);
+  const [showQR,      setShowQR]      = useState(false);
+  const [error,       setError]       = useState<string | null>(null);
 
   const helperUrl = `${window.location.origin}/helper?room=${encodeURIComponent(session.room_url)}`;
 
@@ -75,9 +66,10 @@ export default function SeniorPage({ session }: { session: Session }) {
     }
   }
 
-  async function sendInvite(contact: typeof CONTACTS[0]) {
-    setSending(contact.name);
-    setSent(null);
+  async function sendInvite() {
+    if (!helperEmail) return;
+    setSending(true);
+    setSent(false);
     setError(null);
 
     try {
@@ -87,20 +79,20 @@ export default function SeniorPage({ session }: { session: Session }) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            helper_email: contact.email,
-            helper_name:  contact.name,
+            helper_email: helperEmail,
+            helper_name:  helperName || helperEmail,
             room_url:     helperUrl,
-            senior_name:  SENIOR_NAME,
+            senior_name:  "Someone",
           }),
         }
       );
       if (!res.ok) throw new Error("Failed to send");
-      setSent(contact.name);
-      setTimeout(() => setSent(null), 5000);
+      setSent(true);
+      setTimeout(() => setSent(false), 5000);
     } catch {
-      setError(`Could not send to ${contact.name}. Please try again.`);
+      setError("Could not send invite. Please try again.");
     } finally {
-      setSending(null);
+      setSending(false);
     }
   }
 
@@ -121,28 +113,31 @@ export default function SeniorPage({ session }: { session: Session }) {
 
       <p style={s.sectionLabel}>Who do you need help from?</p>
 
-      {CONTACTS.map(contact => {
-        const isSending = sending === contact.name;
-        const isSent    = sent    === contact.name;
-        return (
-          <button
-            key={contact.name}
-            style={{
-              ...s.contactBtn,
-              ...(isSent ? s.contactBtnSent : {}),
-              opacity: sending && !isSending ? 0.5 : 1,
-            }}
-            onClick={() => sendInvite(contact)}
-            disabled={!!sending || isSent}
-          >
-            {isSent
-              ? `✓ Invitation sent to ${contact.name}`
-              : isSending
-              ? "Sending..."
-              : `Call ${contact.name}`}
-          </button>
-        );
-      })}
+      <input
+        style={s.input}
+        type="text"
+        placeholder="Their name (optional)"
+        value={helperName}
+        onChange={e => setHelperName(e.target.value)}
+      />
+      <input
+        style={s.input}
+        type="email"
+        placeholder="Their email address"
+        value={helperEmail}
+        onChange={e => setHelperEmail(e.target.value)}
+      />
+      <button
+        style={{
+          ...s.contactBtn,
+          ...(sent ? s.contactBtnSent : {}),
+          opacity: !helperEmail || sending ? 0.5 : 1,
+        }}
+        onClick={sendInvite}
+        disabled={!helperEmail || sending || sent}
+      >
+        {sent ? "✓ Invitation sent!" : sending ? "Sending..." : "Send Invite"}
+      </button>
 
       <button style={s.qrToggle} onClick={() => setShowQR(v => !v)}>
         {showQR ? "Hide QR Code" : "Show QR Code instead"}
@@ -188,6 +183,11 @@ const s: Record<string, CSSProperties> = {
     maxWidth: "480px", width: "100%", textAlign: "center",
   },
   sectionLabel: { fontSize: "20px", color: "#555", marginBottom: "16px", fontWeight: 600 },
+  input: {
+    fontSize: "18px", padding: "16px", borderRadius: "12px",
+    border: "2px solid #ddd", width: "100%", maxWidth: "480px",
+    marginBottom: "12px", boxSizing: "border-box",
+  },
   contactBtn: {
     fontSize: "24px", fontWeight: "700", background: "white", color: "#E85D04",
     border: "3px solid #E85D04", borderRadius: "16px", padding: "20px",
