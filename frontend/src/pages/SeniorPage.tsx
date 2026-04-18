@@ -66,6 +66,7 @@ export default function SeniorPage({ session, userId, onLogout, onNewSession }: 
     return () => {
       callRef.current?.leave();
       callRef.current?.destroy();
+      audioRef.current?.remove();
       if (timerRef.current) clearTimeout(timerRef.current);
       if (msgTimerRef.current) clearTimeout(msgTimerRef.current);
     };
@@ -83,6 +84,7 @@ export default function SeniorPage({ session, userId, onLogout, onNewSession }: 
           if (!audioRef.current) {
             audioRef.current = document.createElement("audio");
             audioRef.current.autoplay = true;
+            document.body.appendChild(audioRef.current);
           }
           audioRef.current.srcObject = new MediaStream([e.track]);
           audioRef.current.play().catch(() => {});

@@ -117,16 +117,17 @@
   });
 
   // ── Bridge: Comet web app → chrome.storage ───────────
-  // The Comet page postMessages events; this content script
-  // (running in extension context) writes them to storage so
-  // ALL tabs' content scripts can react.
   window.addEventListener('message', (e) => {
     if (!e.data || typeof e.data !== 'object') return;
-    if (e.data.type === 'comet-pointer') {
-      chrome.storage.local.set({ 'comet-pointer': { x: e.data.x, y: e.data.y, t: Date.now() } });
-    }
-    if (e.data.type === 'comet-text') {
-      chrome.storage.local.set({ 'comet-text': e.data.msg });
-    }
+    // Guard against invalidated extension context
+    try {
+      if (!chrome?.storage?.local) return;
+      if (e.data.type === 'comet-pointer') {
+        chrome.storage.local.set({ 'comet-pointer': { x: e.data.x, y: e.data.y, t: Date.now() } });
+      }
+      if (e.data.type === 'comet-text') {
+        chrome.storage.local.set({ 'comet-text': e.data.msg });
+      }
+    } catch (_) {}
   });
 })();

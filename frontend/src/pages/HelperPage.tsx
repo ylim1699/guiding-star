@@ -10,7 +10,7 @@ export default function HelperPage() {
 
   const callRef  = useRef<ReturnType<typeof DailyIframe.createCallObject> | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [joined,     setJoined]     = useState(false);
   const [statusKey,  setStatusKey]  = useState<"connecting" | "waiting" | "live">("connecting");
   const [statusText, setStatusText] = useState("Connecting...");
@@ -24,6 +24,7 @@ export default function HelperPage() {
     return () => {
       callRef.current?.leave();
       callRef.current?.destroy();
+      audioRef.current?.remove();
     };
   }, []);
 
@@ -43,7 +44,12 @@ export default function HelperPage() {
         setStatusText("Live — click to guide");
         setHasVideo(true);
       }
-      if (e?.track.kind === "audio" && audioRef.current) {
+      if (e?.track.kind === "audio") {
+        if (!audioRef.current) {
+          audioRef.current = document.createElement("audio");
+          audioRef.current.autoplay = true;
+          document.body.appendChild(audioRef.current);
+        }
         audioRef.current.srcObject = new MediaStream([e.track]);
         audioRef.current.play().catch(() => {});
       }
@@ -136,7 +142,6 @@ export default function HelperPage() {
 
   return (
     <div className="helper-page">
-      <audio ref={audioRef} autoPlay playsInline style={{ display: "none" }} />
       <header className="helper-topbar">
         <Logo variant="dark" size="sm" />
         <div className="helper-topbar-right">
