@@ -4,6 +4,7 @@
   "rewrites": [
     { "source": "/create-room", "destination": "/api/index" },
     { "source": "/send-invite", "destination": "/api/index" },
+    { "source": "/generate-summary", "destination": "/api/index" },
     { "source": "/health", "destination": "/api/index" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]

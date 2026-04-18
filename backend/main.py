@@ -2,7 +2,12 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import httpx, os, time, resend, json
-import google.generativeai as genai
+
+try:
+    import google.generativeai as genai
+    _genai_available = True
+except ImportError:
+    _genai_available = False
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -18,7 +23,8 @@ app.add_middleware(
 
 DAILY_KEY = os.getenv("DAILY_API_KEY")
 resend.api_key = os.getenv("RESEND_API_KEY")
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+if _genai_available:
+    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 
 class RoomRequest(BaseModel):
@@ -147,6 +153,8 @@ Respond ONLY with valid JSON, exactly this shape:
 {{"summary": "...", "steps": ["...", "...", "..."]}}"""
 
     try:
+        if not _genai_available:
+            raise RuntimeError("google-generativeai not installed")
         model = genai.GenerativeModel("gemini-2.0-flash")
         response = model.generate_content(prompt)
         raw = response.text.strip()
