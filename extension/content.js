@@ -42,7 +42,7 @@
     }
     #comet-msg {
       position: fixed;
-      bottom: 36px;
+      bottom: 80px;
       left: 50%;
       transform: translateX(-50%);
       display: none;
@@ -95,7 +95,7 @@
     msg.textContent = text;
     msg.style.left = '50%';
     msg.style.top = '';
-    msg.style.bottom = '36px';
+    msg.style.bottom = '80px';
     msg.style.transform = 'translateX(-50%)';
     msg.style.display = 'block';
     if (msgTimer) clearTimeout(msgTimer);
