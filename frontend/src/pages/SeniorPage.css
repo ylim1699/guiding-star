@@ -1,95 +1,405 @@
+/* ── Luminous Arc Design System ───────────────────────── */
+:root {
+  --surface:          #faf8ff;
+  --surface-low:      #f3f2fe;
+  --surface-card:     #ffffff;
+  --primary:          #0037b0;
+  --primary-mid:      #1D4ED8;
+  --primary-light:    rgba(29, 78, 216, 0.08);
+  --primary-glow:     rgba(29, 78, 216, 0.15);
+  --outline-ghost:    rgba(29, 78, 216, 0.12);
+  --on-surface:       #1a1b23;
+  --on-surface-2:     #3d3f58;
+  --on-surface-muted: #6b6d88;
+  --success-bg:       #edfcf5;
+  --success-text:     #0a6640;
+  --warn-bg:          #fffbeb;
+  --warn-text:        #7c4d00;
+  --error-bg:         #fff2f2;
+  --error-text:       #9b1c1c;
+  --celestial-shadow: 0 12px 40px rgba(29, 78, 216, 0.08);
+  --comet-gradient:   linear-gradient(135deg, #0037b0 0%, #1D4ED8 100%);
+  --font-display:     'Space Grotesk', system-ui, sans-serif;
+  --font-body:        'Public Sans', system-ui, sans-serif;
+}
+
+/* ── Page shell ───────────────────────────────────────── */
 .senior-page {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
   min-height: 100vh;
-  background: #fff9f0;
-  padding: 32px;
+  background: var(--surface);
+  font-family: var(--font-body);
+  color: var(--on-surface);
   position: relative;
-  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
-.senior-badge {
-  border-radius: 50px;
-  padding: 12px 28px;
-  margin-bottom: 32px;
+/* Atmospheric radial glow — top right */
+.senior-page::after {
+  content: '';
+  position: fixed;
+  top: -120px;
+  right: -160px;
+  width: 560px;
+  height: 560px;
+  background: radial-gradient(circle, rgba(29, 78, 216, 0.07) 0%, transparent 68%);
+  pointer-events: none;
+  z-index: 0;
 }
 
-.senior-badge-txt {
-  font-size: 20px;
+/* ── Top nav ──────────────────────────────────────────── */
+.senior-nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 40px;
+  background: rgba(250, 248, 255, 0.82);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.senior-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ── Session status pill ──────────────────────────────── */
+.senior-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: 100px;
+  font-family: var(--font-body);
+  font-size: 14px;
   font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: all 0.35s ease;
 }
 
-.senior-heading {
-  font-size: 28px;
+.senior-status.starting {
+  background: var(--primary-light);
+  color: var(--primary-mid);
+}
+.senior-status.waiting {
+  background: var(--warn-bg);
+  color: var(--warn-text);
+}
+.senior-status.connected {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+.senior-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.senior-status.connected .senior-status-dot {
+  animation: sp-blink 2s ease-in-out infinite;
+}
+@keyframes sp-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
+/* ── Main content ─────────────────────────────────────── */
+.senior-content {
+  flex: 1;
+  padding: 48px 40px 64px;
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 1;
+}
+
+/* Asymmetric editorial headline */
+.senior-hero {
+  margin-bottom: 48px;
+}
+.senior-hero-eyebrow {
+  font-family: var(--font-body);
+  font-size: 13px;
   font-weight: 700;
-  color: #333;
-  margin-bottom: 24px;
-  text-align: center;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--primary-mid);
+  margin-bottom: 12px;
+}
+.senior-hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 5vw, 54px);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: var(--on-surface);
+  margin: 0 0 14px;
+}
+.senior-hero-title em {
+  font-style: normal;
+  color: var(--primary-mid);
+}
+.senior-hero-sub {
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--on-surface-muted);
+  max-width: 480px;
+  margin: 0;
 }
 
-.senior-label {
-  font-size: 16px;
-  color: #666;
+/* ── Two-column grid ──────────────────────────────────── */
+.senior-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 820px) {
+  .senior-grid {
+    grid-template-columns: 1fr;
+  }
+  .senior-content {
+    padding: 32px 24px 56px;
+  }
+  .senior-nav {
+    padding: 14px 24px;
+  }
+}
+
+/* ── Surface cards (tonal layering, no borders) ───────── */
+.senior-card {
+  background: var(--surface-card);
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: var(--celestial-shadow);
+  /* Ghost outline for accessibility */
+  outline: 1.5px solid var(--outline-ghost);
+}
+
+.senior-card-label {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--on-surface);
+  letter-spacing: -0.02em;
+  margin: 0 0 24px;
+}
+
+/* ── Error ────────────────────────────────────────────── */
+.senior-error {
+  background: var(--error-bg);
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--error-text);
+  outline: 1.5px solid rgba(155, 28, 28, 0.12);
+}
+
+/* ── Inputs ───────────────────────────────────────────── */
+.senior-field {
+  margin-bottom: 16px;
+}
+.senior-field-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--on-surface-2);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   margin-bottom: 8px;
 }
-
-.senior-link-row {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 40px;
-  max-width: 600px;
+.senior-input {
+  display: block;
   width: 100%;
-}
-
-.senior-link-box {
-  flex: 1;
-  font-size: 13px;
-  padding: 12px;
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.senior-copy-btn {
-  font-size: 16px;
-  padding: 12px 20px;
-  background: #e85d04;
-  color: white;
+  font-family: var(--font-body);
+  font-size: 18px;
+  font-weight: 500;
+  padding: 16px 20px;
+  border-radius: 14px;
   border: none;
-  border-radius: 8px;
-  cursor: pointer;
+  background: var(--surface-low);
+  color: var(--on-surface);
+  outline: none;
+  box-sizing: border-box;
+  transition: box-shadow 0.2s ease, background 0.2s ease;
+  -webkit-appearance: none;
+}
+.senior-input:focus {
+  background: var(--surface-card);
+  box-shadow: 0 0 0 2.5px var(--primary-mid), 0 4px 16px rgba(29,78,216,0.1);
+}
+.senior-input::placeholder {
+  color: #adadc8;
 }
 
-.senior-end-btn {
-  font-size: 20px;
+/* ── Primary CTA — Comet Trail gradient ──────────────── */
+.senior-btn-primary {
+  font-family: var(--font-body);
+  font-size: 18px;
   font-weight: 700;
-  background: #dc3545;
-  color: white;
+  background: var(--comet-gradient);
+  color: #fff;
   border: none;
-  border-radius: 12px;
-  padding: 18px 48px;
+  border-radius: 16px;
+  padding: 0 28px;
+  height: 64px;
+  width: 100%;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 8px;
+  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 8px 24px rgba(0, 55, 176, 0.28);
+  letter-spacing: 0.01em;
+  position: relative;
+  overflow: hidden;
+}
+.senior-btn-primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0);
+  transition: background 0.2s;
+  border-radius: inherit;
+}
+.senior-btn-primary:hover:not(:disabled)::after {
+  background: rgba(255,255,255,0.08);
+}
+.senior-btn-primary:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.senior-btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.senior-btn-primary.sent {
+  background: linear-gradient(135deg, #047857, #059669);
+  box-shadow: 0 8px 24px rgba(4, 120, 87, 0.28);
 }
 
+/* ── Ghost button ─────────────────────────────────────── */
+.senior-btn-ghost {
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 600;
+  background: transparent;
+  color: var(--primary-mid);
+  border: none;
+  padding: 0;
+  height: 44px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.85;
+  transition: opacity 0.2s;
+  letter-spacing: 0.01em;
+}
+.senior-btn-ghost:hover {
+  opacity: 1;
+}
+
+/* ── Session panel (right column) ────────────────────── */
+.senior-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.senior-panel-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--on-surface-muted);
+  margin: 0 0 16px;
+}
+
+/* QR box */
+.senior-qr-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 0 4px;
+}
+.senior-qr-wrap {
+  background: white;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 4px 20px rgba(29,78,216,0.1);
+}
+.senior-qr-hint {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--on-surface-muted);
+  text-align: center;
+  max-width: 260px;
+}
+
+/* ── End session ──────────────────────────────────────── */
+.senior-btn-end {
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 700;
+  background: transparent;
+  color: #dc2626;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.75;
+  transition: opacity 0.2s;
+  letter-spacing: 0.01em;
+  margin-top: 4px;
+}
+.senior-btn-end:hover { opacity: 1; }
+
+/* ── Comet pointer overlay ────────────────────────────── */
 .senior-overlay {
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 9999;
 }
-
-.senior-dot {
+.senior-comet-pointer {
   position: absolute;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: rgba(232, 93, 4, 0.85);
-  border: 3px solid white;
-  box-shadow: 0 0 0 6px rgba(232, 93, 4, 0.2);
   transition: transform 0.15s ease;
+  will-change: transform;
+}
+
+/* ── Starburst spark animation ────────────────────────── */
+@keyframes spark-out {
+  0%   { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+}
+.senior-spark {
+  position: fixed;
+  pointer-events: none;
+  z-index: 100;
+}
+.senior-spark-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ffddb8;
+  animation: spark-out 0.55s ease-out forwards;
 }

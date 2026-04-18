@@ -1,65 +1,258 @@
+/* ── Helper page — Dark Luminous Arc ─────────────────── */
+:root {
+  --h-bg:          #0a0c14;
+  --h-surface:     #10141f;
+  --h-surface-2:   #161c2d;
+  --h-primary:     #1D4ED8;
+  --h-primary-mid: #3b6ef5;
+  --h-primary-glow:rgba(61, 110, 245, 0.18);
+  --h-text:        #e8eaf4;
+  --h-muted:       #5a6280;
+  --h-success:     #34d399;
+  --h-warn:        #fbbf24;
+  --h-glass-bg:    rgba(16, 20, 31, 0.78);
+  --font-display:  'Space Grotesk', system-ui, sans-serif;
+  --font-body:     'Public Sans', system-ui, sans-serif;
+}
+
+/* ── Shell ────────────────────────────────────────────── */
 .helper-page {
-  background: #1a1a2e;
+  background: var(--h-bg);
   min-height: 100vh;
-  padding: 32px;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
+  font-family: var(--font-body);
+  position: relative;
+  overflow: hidden;
   box-sizing: border-box;
 }
 
-.helper-title {
-  color: #e85d04;
-  font-size: 32px;
-  font-weight: 700;
-  margin-bottom: 4px;
+/* Deep-space atmospheric glow */
+.helper-page::before {
+  content: '';
+  position: fixed;
+  top: -200px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 900px;
+  height: 600px;
+  background: radial-gradient(ellipse at top, rgba(29, 78, 216, 0.1) 0%, transparent 65%);
+  pointer-events: none;
+  z-index: 0;
 }
 
-.helper-status {
-  color: #aaa;
-  font-size: 18px;
-  margin-bottom: 24px;
+/* Subtle star field */
+.helper-page::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 8%  12%, rgba(255,255,255,0.22) 0%, transparent 100%),
+    radial-gradient(1px 1px at 75%  7%, rgba(255,255,255,0.18) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 91% 28%, rgba(255,255,255,0.15) 0%, transparent 100%),
+    radial-gradient(1px 1px at 42%  72%, rgba(255,255,255,0.13) 0%, transparent 100%),
+    radial-gradient(1px 1px at 22%  88%, rgba(255,255,255,0.1) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 60%  5%, rgba(255,255,255,0.2) 0%, transparent 100%),
+    radial-gradient(1px 1px at 85%  80%, rgba(255,255,255,0.12) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Glassmorphism top bar ────────────────────────────── */
+.helper-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 28px;
+  background: var(--h-glass-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid rgba(255,255,255,0.045);
+  flex-shrink: 0;
+}
+
+/* ── Status badge ─────────────────────────────────────── */
+.helper-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 100px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: all 0.35s ease;
+  background: rgba(255,255,255,0.04);
+  color: var(--h-muted);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.helper-status-badge.waiting {
+  background: rgba(251, 191, 36, 0.08);
+  color: var(--h-warn);
+  border-color: rgba(251, 191, 36, 0.2);
+}
+.helper-status-badge.live {
+  background: rgba(52, 211, 153, 0.08);
+  color: var(--h-success);
+  border-color: rgba(52, 211, 153, 0.2);
+}
+
+.helper-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.helper-status-badge.live .helper-status-dot {
+  animation: h-pulse 2s ease-in-out infinite;
+}
+@keyframes h-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.65); }
+}
+
+/* ── Main — video stays full-width ───────────────────── */
+.helper-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 20px 0;
+  position: relative;
+  z-index: 1;
 }
 
 .helper-video-wrap {
   position: relative;
-  max-width: 680px;
   width: 100%;
-  cursor: crosshair;
+  flex: 1;
+}
+
+/* Frame — no box border when waiting, subtle glow when live */
+.helper-video-frame {
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  transition: box-shadow 0.5s ease;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.04),
+    0 24px 64px rgba(0, 0, 0, 0.55);
+}
+.helper-video-frame.live {
+  box-shadow:
+    0 0 0 1.5px rgba(29, 78, 216, 0.35),
+    0 0 60px rgba(29, 78, 216, 0.1),
+    0 24px 64px rgba(0, 0, 0, 0.55);
 }
 
 .helper-video {
   width: 100%;
-  border-radius: 12px;
-  border: 3px solid #e85d04;
+  max-height: calc(100vh - 140px);
   display: block;
+  object-fit: contain;
+  background: #000;
 }
 
+/* Waiting placeholder */
+.helper-waiting {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: var(--h-surface);
+  min-height: 360px;
+}
+
+.helper-waiting-ring {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 2px solid rgba(29, 78, 216, 0.2);
+  border-top-color: var(--h-primary-mid);
+  animation: spin 1.4s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.helper-waiting-label {
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--h-muted);
+  letter-spacing: 0.01em;
+}
+
+/* Click — comet star burst */
 .helper-ripple {
   position: absolute;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: rgba(232, 93, 4, 0.4);
-  transform: translate(-50%, -50%);
+  width: 52px;
+  height: 52px;
+  transform: translate(-50%, -50%) scale(0.4);
   pointer-events: none;
-  animation: ripple 0.4s ease-out forwards;
+  animation: h-star-burst 0.5s ease-out forwards;
+  /* 4-pointed star shape */
+  clip-path: polygon(
+    50% 0%,   57% 43%,
+    100% 50%, 57% 57%,
+    50% 100%, 43% 57%,
+    0% 50%,   43% 43%
+  );
+  background: white;
+  filter: drop-shadow(0 0 8px rgba(29,78,216,0.9));
+}
+@keyframes h-star-burst {
+  0%   { transform: translate(-50%, -50%) scale(0.4); opacity: 1; }
+  40%  { transform: translate(-50%, -50%) scale(1.6); opacity: 0.9; }
+  100% { transform: translate(-50%, -50%) scale(3);   opacity: 0; }
 }
 
-.helper-hint {
-  color: #555;
-  font-size: 14px;
-  margin-top: 12px;
-}
-
-.helper-center {
+/* ── Bottom footer ────────────────────────────────────── */
+.helper-footer {
+  padding: 14px 28px 18px;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100vh;
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+}
+.helper-hint {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--h-muted);
+  letter-spacing: 0.02em;
+}
+.helper-hint-spark {
+  color: var(--h-primary-mid);
+  font-size: 10px;
+  opacity: 0.7;
 }
 
+/* ── Error / no-room state ────────────────────────────── */
+.helper-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  gap: 16px;
+  background: var(--h-bg);
+  font-family: var(--font-body);
+}
 .helper-err {
-  color: #aaa;
-  font-size: 20px;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--h-muted);
 }

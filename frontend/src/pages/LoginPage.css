@@ -1,44 +1,358 @@
-.login-wrapper {
+/* ── Login Page — Luminous Arc ───────────────────────── */
+
+.login-page {
   display: flex;
-  flex-direction: column;
+  min-height: 100vh;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  background: #faf8ff;
+  font-family: 'Public Sans', system-ui, sans-serif;
+  color: #1a1b23;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Atmospheric glows */
+.login-glow-tr {
+  position: fixed;
+  top: -80px;
+  right: -80px;
+  width: 480px;
+  height: 480px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(29,78,216,0.08) 0%, transparent 65%);
+  pointer-events: none;
+  z-index: 0;
+}
+.login-glow-bl {
+  position: fixed;
+  bottom: -100px;
+  left: -100px;
+  width: 520px;
+  height: 520px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,221,184,0.12) 0%, transparent 65%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Left pane ─────────────────────────────────────────── */
+.login-left {
+  flex: 1;
+  display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
-  background: #FFF9F0;
-  padding: 32px;
+  padding: 48px 64px;
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
 }
 
-.login-title {
-  font-size: 52px;
+.login-inner {
+  width: 100%;
+  max-width: 480px;
+}
+
+/* Brand lockup */
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 48px;
+}
+.login-brand-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #0037b0 0%, #1D4ED8 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(29,78,216,0.25);
+  flex-shrink: 0;
+}
+.login-brand-name {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 28px;
   font-weight: 800;
-  color: #E85D04;
-  margin-bottom: 8px;
+  color: #0037b0;
+  letter-spacing: -0.04em;
+  font-style: italic;
 }
 
+/* Hero headline */
+.login-headline {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(40px, 5.5vw, 58px);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  color: #1a1b23;
+  margin: 0 0 20px;
+}
+.login-headline-accent {
+  color: #1D4ED8;
+}
 .login-sub {
   font-size: 20px;
-  color: #666;
-  margin-bottom: 32px;
+  line-height: 1.6;
+  color: #5c5f7a;
+  margin: 0 0 48px;
+  max-width: 400px;
 }
 
+/* Form */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.login-field-label {
+  display: block;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1D4ED8;
+  margin-bottom: 12px;
+  margin-left: 4px;
+}
+
+/* Phone input with prefix */
+.login-phone-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+}
+.login-phone-prefix {
+  position: absolute;
+  left: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+  z-index: 1;
+}
+.login-phone-prefix-num {
+  font-size: 20px;
+  font-weight: 600;
+  color: #434655;
+}
+.login-phone-prefix-divider {
+  width: 1px;
+  height: 28px;
+  background: rgba(196,197,215,0.5);
+}
 .login-input {
+  width: 100%;
+  background: #e2e1ed;
+  border: none;
+  border-radius: 14px;
+  padding: 22px 20px 22px 80px;
+  font-family: 'Public Sans', sans-serif;
   font-size: 22px;
-  padding: 16px 20px;
-  border: 2px solid #E85D04;
-  border-radius: 12px;
-  width: 320px;
-  margin-bottom: 16px;
+  font-weight: 600;
+  color: #1a1b23;
   outline: none;
+  box-sizing: border-box;
+  transition: box-shadow 0.2s ease, background 0.2s ease;
+  -webkit-appearance: none;
+}
+.login-input:focus {
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(29,78,216,0.25), 0 4px 20px rgba(29,78,216,0.08);
+}
+.login-input::placeholder {
+  color: rgba(103,107,134,0.55);
 }
 
-.login-btn {
-  font-size: 22px;
-  font-weight: 700;
-  background: #E85D04;
-  color: white;
+/* OTP input (no prefix) */
+.login-input-plain {
+  width: 100%;
+  background: #e2e1ed;
   border: none;
-  border-radius: 12px;
-  padding: 18px 48px;
+  border-radius: 14px;
+  padding: 22px 20px;
+  font-family: 'Public Sans', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1b23;
+  letter-spacing: 0.15em;
+  text-align: center;
+  outline: none;
+  box-sizing: border-box;
+  margin-bottom: 24px;
+  transition: box-shadow 0.2s ease, background 0.2s ease;
+  -webkit-appearance: none;
+}
+.login-input-plain:focus {
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(29,78,216,0.25), 0 4px 20px rgba(29,78,216,0.08);
+}
+
+/* Primary button */
+.login-btn {
+  width: 100%;
+  height: 72px;
+  background: linear-gradient(135deg, #0037b0 0%, #1D4ED8 100%);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  font-family: 'Public Sans', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
   cursor: pointer;
-  width: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 12px 40px rgba(29,78,216,0.22);
+  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.login-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0);
+  transition: background 0.2s;
+  border-radius: inherit;
+}
+.login-btn:hover:not(:disabled)::after {
+  background: rgba(255,255,255,0.08);
+}
+.login-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.login-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Arrow icon in button */
+.login-btn-arrow {
+  font-size: 18px;
+  opacity: 0.85;
+}
+
+/* "Didn't get a code?" retry link */
+.login-legal {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #6b6d88;
+}
+.login-legal a {
+  color: #1D4ED8;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: rgba(29,78,216,0.3);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* Error */
+.login-error {
+  background: #fff2f2;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #9b1c1c;
+  margin-bottom: 20px;
+  outline: 1.5px solid rgba(155,28,28,0.12);
+}
+
+/* ── Right decorative pane ──────────────────────────── */
+.login-right {
+  width: 38%;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+  .login-right { display: none; }
+  .login-left  { padding: 40px 32px; }
+}
+
+.login-right-bg {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(160deg, #080c20 0%, #0a1035 50%, #0d1545 100%);
+}
+
+/* Comet trail light beams */
+.login-right-beam {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  pointer-events: none;
+}
+.login-right-beam-1 {
+  width: 300px;
+  height: 600px;
+  background: linear-gradient(180deg, rgba(29,78,216,0.55) 0%, rgba(59,110,245,0.15) 60%, transparent 100%);
+  top: -80px;
+  right: -40px;
+  transform: rotate(-18deg);
+  transform-origin: top right;
+}
+.login-right-beam-2 {
+  width: 180px;
+  height: 500px;
+  background: linear-gradient(180deg, rgba(100,150,255,0.3) 0%, transparent 70%);
+  top: 60px;
+  right: 80px;
+  transform: rotate(-10deg);
+  transform-origin: top right;
+}
+.login-right-beam-3 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(ellipse, rgba(255,221,184,0.12) 0%, transparent 65%);
+  bottom: -100px;
+  left: -80px;
+}
+
+/* Star dots */
+.login-right-stars {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1.5px 1.5px at 20% 15%, rgba(255,255,255,0.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 65% 8%,  rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 82% 30%, rgba(255,255,255,0.35) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 40% 55%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 75% 70%, rgba(255,255,255,0.25) 0%, transparent 100%),
+    radial-gradient(1px 1px at 15% 80%, rgba(255,255,255,0.2) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 55% 90%, rgba(255,255,255,0.3) 0%, transparent 100%);
+}
+
+/* Fade edge into left pane */
+.login-right-fade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, #faf8ff 0%, transparent 18%);
+  pointer-events: none;
+}
+
+/* Brand watermark */
+.login-right-label {
+  position: absolute;
+  bottom: 40px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.2);
 }
