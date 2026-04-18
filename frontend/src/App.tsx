@@ -79,7 +79,7 @@ export default function App() {
             : <LoginPage onLogin={handleLogin} />
         } />
         <Route path="/senior" element={
-          session
+          session && user
             ? <SeniorPage key={session.room_name} session={session} userId={user.phoneNumber || ""} onLogout={handleLogout} onNewSession={handleNewSession} />
             : <Navigate to="/" />
         } />
