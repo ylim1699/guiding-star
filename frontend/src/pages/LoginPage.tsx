@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../firebase";
 import {
@@ -8,10 +8,6 @@ import {
 import type { ConfirmationResult } from "firebase/auth";
 import "./LoginPage.css";
 
-function createVerifier(): RecaptchaVerifier {
-    return new RecaptchaVerifier(auth, "recaptcha-container", { size: "invisible" });
-}
-
 export default function LoginPage({ onLogin }: { onLogin: (user: { phoneNumber: string | null }) => void }) {
     const [phone, setPhone] = useState("");
     const [code, setCode] = useState("");
@@ -20,6 +16,14 @@ export default function LoginPage({ onLogin }: { onLogin: (user: { phoneNumber: 
     const [error, setError] = useState("");
     const navigate = useNavigate();
     const verifierRef = useRef<RecaptchaVerifier | null>(null);
+
+    useEffect(() => {
+        verifierRef.current = new RecaptchaVerifier(auth, "recaptcha-container", { size: "invisible" });
+        return () => {
+            verifierRef.current?.clear();
+            verifierRef.current = null;
+        };
+    }, []);
 
     async function verifyOTP() {
         setLoading(true);
@@ -38,18 +42,11 @@ export default function LoginPage({ onLogin }: { onLogin: (user: { phoneNumber: 
     async function sendOTP() {
         setLoading(true);
         setError("");
-        if (!verifierRef.current) {
-            verifierRef.current = createVerifier();
-        }
         try {
             const formatted = phone.startsWith("+") ? phone : `+1${phone}`;
-            const result = await signInWithPhoneNumber(auth, formatted, verifierRef.current);
+            const result = await signInWithPhoneNumber(auth, formatted, verifierRef.current!);
             setConfirm(result);
         } catch (err: unknown) {
-            verifierRef.current?.clear();
-            verifierRef.current = null;
-            const container = document.getElementById("recaptcha-container");
-            if (container) container.innerHTML = "";
             setError(err instanceof Error ? err.message : "Failed to send code. Please try again.");
         } finally {
             setLoading(false);
