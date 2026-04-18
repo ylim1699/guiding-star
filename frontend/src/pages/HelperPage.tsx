@@ -10,6 +10,8 @@ export default function HelperPage() {
 
   const callRef  = useRef<ReturnType<typeof DailyIframe.createCallObject> | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [joined,     setJoined]     = useState(false);
   const [statusKey,  setStatusKey]  = useState<"connecting" | "waiting" | "live">("connecting");
   const [statusText, setStatusText] = useState("Connecting...");
   const [hasVideo,   setHasVideo]   = useState(false);
@@ -19,13 +21,16 @@ export default function HelperPage() {
   const [msgSent,    setMsgSent]    = useState(false);
 
   useEffect(() => {
-    if (!roomUrl) return;
-    join();
     return () => {
       callRef.current?.leave();
       callRef.current?.destroy();
     };
   }, []);
+
+  async function handleJoin() {
+    setJoined(true);
+    await join();
+  }
 
   async function join() {
     const call = DailyIframe.createCallObject({ audioSource: true, videoSource: false });
@@ -37,6 +42,10 @@ export default function HelperPage() {
         setStatusKey("live");
         setStatusText("Live — click to guide");
         setHasVideo(true);
+      }
+      if (e?.track.kind === "audio" && audioRef.current) {
+        audioRef.current.srcObject = new MediaStream([e.track]);
+        audioRef.current.play().catch(() => {});
       }
     });
     call.on("participant-joined", () => {
@@ -102,10 +111,32 @@ export default function HelperPage() {
     </div>
   );
 
+  if (!joined) return (
+    <div className="helper-page">
+      <header className="helper-topbar">
+        <Logo variant="dark" size="sm" />
+      </header>
+      <div className="helper-join-screen">
+        <div className="helper-join-icon">
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+            <circle cx="20" cy="20" r="18" stroke="rgba(61,110,245,0.3)" strokeWidth="1.5"/>
+            <path d="M14 20h12M20 14v12" stroke="#3b6ef5" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+        </div>
+        <h2 className="helper-join-title">Ready to guide?</h2>
+        <p className="helper-join-sub">You'll see their screen and can click anywhere to place a guide marker.</p>
+        <button className="helper-join-btn" onClick={handleJoin}>
+          Join Session →
+        </button>
+      </div>
+    </div>
+  );
+
   const badgeClass = `helper-status-badge ${statusKey === "live" ? "live" : statusKey === "waiting" ? "waiting" : ""}`;
 
   return (
     <div className="helper-page">
+      <audio ref={audioRef} autoPlay playsInline style={{ display: "none" }} />
       <header className="helper-topbar">
         <Logo variant="dark" size="sm" />
         <div className="helper-topbar-right">

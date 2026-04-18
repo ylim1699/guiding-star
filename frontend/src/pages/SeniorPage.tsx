@@ -18,6 +18,7 @@ export default function SeniorPage({ session, userId, onLogout, onNewSession }: 
 }) {
   const navigate        = useNavigate();
   const callRef         = useRef<ReturnType<typeof DailyIframe.createCallObject> | null>(null);
+  const audioRef        = useRef<HTMLAudioElement | null>(null);
   const timerRef        = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wasConnected    = useRef(false);
   const sessionDocId    = useRef<string | null>(null);
@@ -74,15 +75,19 @@ export default function SeniorPage({ session, userId, onLogout, onNewSession }: 
     setStarted(true);
     setError(null);
     try {
-      // Try with mic first; fall back to listen-only if no mic is found
-      let audioSource: boolean | MediaStreamTrack = true;
-      try {
-        await navigator.mediaDevices.getUserMedia({ audio: true });
-      } catch {
-        audioSource = false; // no mic — join in listen-only mode
-      }
-      const call = DailyIframe.createCallObject({ audioSource, videoSource: false });
+      const call = DailyIframe.createCallObject({ audioSource: true, videoSource: false });
       callRef.current = call;
+
+      call.on("track-started", (e) => {
+        if (e?.track.kind === "audio" && !e.participant?.local) {
+          if (!audioRef.current) {
+            audioRef.current = document.createElement("audio");
+            audioRef.current.autoplay = true;
+          }
+          audioRef.current.srcObject = new MediaStream([e.track]);
+          audioRef.current.play().catch(() => {});
+        }
+      });
 
       call.on("participant-joined", (e) => {
         if (e && !e.participant.local) {
