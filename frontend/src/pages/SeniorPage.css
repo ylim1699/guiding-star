@@ -544,6 +544,88 @@
   gap: 10px;
 }
 
+/* ── Extension install banner ─────────────────────────── */
+.senior-ext-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background: #fffbeb;
+  outline: 1.5px solid rgba(124,77,0,0.14);
+  border-radius: 16px;
+  padding: 16px 14px 16px 18px;
+  margin-bottom: 24px;
+  max-width: 420px;
+  width: 100%;
+  text-align: left;
+  position: relative;
+}
+.senior-ext-banner-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(124,77,0,0.1);
+  color: #7c4d00;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.senior-ext-banner-body {
+  flex: 1;
+  min-width: 0;
+}
+.senior-ext-banner-title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: #3d2600;
+  margin: 0 0 4px;
+}
+.senior-ext-banner-sub {
+  font-size: 13px;
+  line-height: 1.55;
+  color: #7c4d00;
+  margin: 0 0 10px;
+}
+.senior-ext-banner-link {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1D4ED8;
+  text-decoration: none;
+}
+.senior-ext-banner-link:hover { text-decoration: underline; }
+.senior-ext-banner-dismiss {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #7c4d00;
+  opacity: 0.5;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.15s;
+}
+.senior-ext-banner-dismiss:hover { opacity: 1; }
+
+/* ── Extension active indicator ───────────────────────── */
+.senior-ext-active {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #047857;
+  background: #ecfdf5;
+  padding: 7px 14px;
+  border-radius: 100px;
+  margin-bottom: 24px;
+  outline: 1.5px solid rgba(4,120,87,0.15);
+}
+
 /* ── Draggable text message bubble ────────────────────── */
 .senior-text-bubble {
   position: fixed;

@@ -26,6 +26,10 @@ export default function SeniorPage({ session, userId, onLogout, onNewSession }: 
   const sessionStartRef = useRef<number>(Date.now());
 
   const [started,       setStarted]       = useState(false);
+  const [extInstalled,  setExtInstalled]  = useState(false);
+  const [extDismissed,  setExtDismissed]  = useState(
+    () => localStorage.getItem("comet-ext-dismissed") === "1"
+  );
   const [helperOn,      setHelperOn]      = useState(false);
   const [sharing,       setSharing]       = useState(false);
   const [disconnected,  setDisconnected]  = useState(false);
@@ -50,6 +54,14 @@ export default function SeniorPage({ session, userId, onLogout, onNewSession }: 
   const helperUrl = `${window.location.origin}/helper?room=${encodeURIComponent(session.room_url)}`;
 
   useEffect(() => {
+    // Give content script a tick to set the attribute
+    const t = setTimeout(() => {
+      setExtInstalled(document.documentElement.getAttribute('data-comet-ext') === '1');
+    }, 200);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
     return () => {
       callRef.current?.leave();
       callRef.current?.destroy();
@@ -62,7 +74,14 @@ export default function SeniorPage({ session, userId, onLogout, onNewSession }: 
     setStarted(true);
     setError(null);
     try {
-      const call = DailyIframe.createCallObject({ audioSource: true, videoSource: false });
+      // Try with mic first; fall back to listen-only if no mic is found
+      let audioSource: boolean | MediaStreamTrack = true;
+      try {
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch {
+        audioSource = false; // no mic — join in listen-only mode
+      }
+      const call = DailyIframe.createCallObject({ audioSource, videoSource: false });
       callRef.current = call;
 
       call.on("participant-joined", (e) => {
@@ -91,13 +110,17 @@ export default function SeniorPage({ session, userId, onLogout, onNewSession }: 
           if (x < 0 || x > 1 || y < 0 || y > 1) return;
           setPointer({ x, y });
           pointerCountRef.current += 1;
+          // Broadcast to Comet extension (works on any open tab)
+          window.postMessage({ type: 'comet-pointer', x, y }, '*');
           if (timerRef.current) clearTimeout(timerRef.current);
           timerRef.current = setTimeout(() => setPointer(null), 2000);
         }
         if (e?.data?.type === "text" && e.data.msg) {
           setTextMsg(e.data.msg);
-          setTextBubblePos(null); // reset to default position on new message
+          setTextBubblePos(null);
           sessionMessages.current.push(e.data.msg);
+          // Broadcast to Comet extension
+          window.postMessage({ type: 'comet-text', msg: e.data.msg }, '*');
           if (msgTimerRef.current) clearTimeout(msgTimerRef.current);
           msgTimerRef.current = setTimeout(() => setTextMsg(null), 6000);
         }
@@ -300,6 +323,49 @@ export default function SeniorPage({ session, userId, onLogout, onNewSession }: 
           <p className="senior-lobby-sub">
             Tap the button below to share your screen. Then send your guide an invite so they can see what you see and walk you through it.
           </p>
+          {/* Extension install prompt */}
+          {!extInstalled && !extDismissed && (
+            <div className="senior-ext-banner">
+              <div className="senior-ext-banner-icon">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M10 2a4 4 0 014 4v1h1a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2V9a2 2 0 012-2h1V6a4 4 0 014-4z" stroke="currentColor" strokeWidth="1.5"/>
+                  <circle cx="10" cy="13" r="1.5" fill="currentColor"/>
+                </svg>
+              </div>
+              <div className="senior-ext-banner-body">
+                <p className="senior-ext-banner-title">See guide markers everywhere</p>
+                <p className="senior-ext-banner-sub">Install the free Comet extension so your guide's pointer appears on any page — not just this one.</p>
+                <a
+                  className="senior-ext-banner-link"
+                  href="https://chrome.google.com/webstore/detail/comet-guide-overlay"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Add to Chrome — it's free →
+                </a>
+              </div>
+              <button
+                className="senior-ext-banner-dismiss"
+                onClick={() => { setExtDismissed(true); localStorage.setItem("comet-ext-dismissed", "1"); }}
+                title="Dismiss"
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+              </button>
+            </div>
+          )}
+
+          {extInstalled && (
+            <div className="senior-ext-active">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.3"/>
+                <path d="M4 7l2 2 4-4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Comet extension active — pointer works on all pages
+            </div>
+          )}
+
           <button className="senior-btn-primary senior-lobby-btn" onClick={startSession}>
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <rect x="2" y="3" width="16" height="11" rx="2" stroke="currentColor" strokeWidth="1.6"/>
