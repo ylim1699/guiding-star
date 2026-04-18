@@ -62,8 +62,11 @@
       white-space: pre-wrap;
       box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.07);
       animation: comet-msg-in 0.22s ease-out;
-      pointer-events: none;
+      pointer-events: auto;
+      cursor: grab;
+      user-select: none;
     }
+    #comet-msg:active { cursor: grabbing; }
     @keyframes comet-msg-in {
       from { opacity: 0; transform: translateX(-50%) translateY(10px); }
       to   { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -100,14 +103,40 @@
 
   function showMessage(text) {
     msg.textContent = text;
+    // Reset to default bottom-center position on new message
+    msg.style.left = '50%';
+    msg.style.top = '';
+    msg.style.bottom = '36px';
+    msg.style.transform = 'translateX(-50%)';
     msg.style.display = 'block';
-    // reset animation
     msg.style.animation = 'none';
-    msg.offsetHeight; // reflow
+    msg.offsetHeight;
     msg.style.animation = '';
     if (msgTimer) clearTimeout(msgTimer);
     msgTimer = setTimeout(() => { msg.style.display = 'none'; }, 6000);
   }
+
+  let dragOX = 0, dragOY = 0;
+  msg.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    const r = msg.getBoundingClientRect();
+    dragOX = e.clientX - r.left;
+    dragOY = e.clientY - r.top;
+    msg.style.transform = 'none';
+    msg.style.bottom = '';
+    msg.style.left = r.left + 'px';
+    msg.style.top  = r.top  + 'px';
+    function onMove(ev) {
+      msg.style.left = (ev.clientX - dragOX) + 'px';
+      msg.style.top  = (ev.clientY - dragOY) + 'px';
+    }
+    function onUp() {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
 
   // ── Listen to storage changes from any tab ───────────
   chrome.storage.onChanged.addListener((changes) => {
