@@ -21,7 +21,7 @@ Comet is a "dignity-first" support tool that allows helpers to guide seniors thr
 - Persistent Guidance: Through a custom Chrome Extension (Manifest V3), the support doesn't end if the senior leaves the meeting tab. A draggable chat bubble and the "Guiding Star" persist across any website they visit.
 
 - Invisible Onboarding: Seniors join via a single email link or phone number—no passwords to remember and no complex settings to tweak.
-- 
+  
 
 ** How I built it
 Comet is a full-stack application built for performance and simplicity:
